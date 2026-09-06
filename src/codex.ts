@@ -1,7 +1,7 @@
 import type { AgentEventDraft, AgentMessageRequest, AgentProviderCapabilities, AgentMcpServer } from "./contracts.js";
 import { CliAgentProvider, type ProcessRunner, type SpawnSpec } from "./provider.js";
 
-type InternalState = Parameters<InstanceType<typeof CliAgentProvider>["buildInvocation"]>[0];
+type InternalState = any;
 
 function codexMcpConfig(servers: AgentMcpServer[]): string[] {
   const args: string[] = [];
