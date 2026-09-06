@@ -1,5 +1,6 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import type { Readable } from "node:stream";
 import type { AgentEventDraft, AgentMessageRequest, AgentMcpServer, AgentProvider, AgentProviderCapabilities, AgentProviderStatus, AgentSession, AgentWorkspace, StartSessionOptions } from "./contracts.js";
 import { AgentProviderError } from "./contracts.js";
 
@@ -7,7 +8,7 @@ export interface SpawnSpec { command: string; args: string[]; cwd?: string; env?
 export interface RunningProcess { stdout: AsyncIterable<string>; stderr: AsyncIterable<string>; exit: Promise<number | null>; interrupt(): void; terminate(): void }
 export type ProcessRunner = (spec: SpawnSpec) => RunningProcess;
 
-async function* lines(stream: NodeJS.ReadableStream): AsyncIterable<string> {
+async function* lines(stream: Readable): AsyncIterable<string> {
   let pending = "";
   stream.setEncoding("utf8");
   for await (const chunk of stream) {
@@ -23,7 +24,7 @@ async function* lines(stream: NodeJS.ReadableStream): AsyncIterable<string> {
 }
 
 export const nodeProcessRunner: ProcessRunner = (spec) => {
-  const child: ChildProcessWithoutNullStreams = spawn(spec.command, spec.args, { cwd: spec.cwd, env: spec.env ?? process.env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: spec.env ?? process.env, stdio: ["ignore", "pipe", "pipe"] });
   return {
     stdout: lines(child.stdout),
     stderr: lines(child.stderr),
