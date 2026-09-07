@@ -5,7 +5,18 @@ import process from "node:process";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const expected = ["index.d.ts", "index.js"];
+const expected = [
+  "claude.d.ts",
+  "claude.js",
+  "codex.d.ts",
+  "codex.js",
+  "contracts.d.ts",
+  "contracts.js",
+  "index.d.ts",
+  "index.js",
+  "provider.d.ts",
+  "provider.js",
+];
 
 function fail(message) {
   console.error(`distribution-integrity: ${message}`);
@@ -30,7 +41,7 @@ async function main() {
   const resolvedDist = await realpath(dist);
   if (!resolvedDist.startsWith(`${resolvedRoot}${path.sep}`)) fail("dist escapes repository root");
 
-  const entries = (await readdir(dist, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name));
+  const entries = (await readdir(dist, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name, "en"));
   const names = entries.map((entry) => entry.name);
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     fail(`unexpected dist surface: ${names.join(", ")}`);
