@@ -29,31 +29,15 @@ attachWorkspace(sessionId, workspace)
 registerMcpServers(sessionId, servers)
 ```
 
-They are also responsible for:
-
-- capability probing;
-- session start/resume/termination;
-- message submission associated with Totem task IDs;
-- normalized streaming event drafts;
-- interruption/cancellation reporting;
-- explicit workspace attachment;
-- MCP server registration/injection where supported;
-- provider-native error translation;
-- health/status reporting.
+They are also responsible for capability probing, session lifecycle, task-associated messages, normalized streaming drafts, cancellation, explicit workspace attachment, MCP registration, provider-native error translation, and health/status reporting.
 
 ## Event boundary
 
-Provider-native CLI/SDK events must never become core semantics directly.
-
-Adapters emit provider-neutral `AgentEventDraft` values. The Totem broker/composition layer turns those drafts into validated `totem.event/v0` envelopes using `@totem/protocol`. Native event kinds and session references may appear only as diagnostic payload fields; core lifecycle decisions must use the normalized `agent.*` event type.
-
-Do not make core behavior depend on undocumented Codex/Claude event fields.
+Provider-native CLI/SDK events must never become core semantics directly. Adapters emit provider-neutral `AgentEventDraft` values. The Totem broker/composition layer turns those drafts into validated `totem.event/v0` envelopes using `@totem/protocol`.
 
 ## Workspace and MCP policy
 
-A Totem session can attach a workspace as either `read-only` or `read-write`. The adapters translate that declared policy to the strictest available CLI mode and use the workspace path as the child process working directory. MCP servers are injected only from the session's explicit `registerMcpServers`/start-session declarations; adapters do not discover or silently inherit arbitrary servers on Totem's behalf.
-
-The concrete provider process inherits the Totem service environment today. Secret ownership/redaction remains a core/runtime responsibility; callers should pass only provider-required environment to Totem and must not encode secrets in prompts or status payloads.
+A Totem session can attach a workspace as either `read-only` or `read-write`. The adapters translate that declared policy to the strictest available CLI mode and use the workspace path as the child process working directory. MCP servers are injected only from the session's explicit declarations.
 
 ## Development
 
@@ -62,9 +46,15 @@ npm install
 npm run check
 ```
 
-`npm run check` type-checks, runs the deterministic Vitest suite, and builds declarations/JavaScript. Hosted CI runs the same check on Windows and Ubuntu with the project-supported Node 22.20 and Node 24.18 lines.
+`npm run check` type-checks, runs deterministic tests, builds declarations/JavaScript, and validates the public build surface. Hosted CI runs the same check on Windows and Ubuntu with Node 22.20 and Node 24.18.
 
-Real CLI smoke validation is intentionally separate from deterministic CI because it depends on local installation/authentication. `getStatus()` uses `<cli> --version` for capability visibility, while product integration may present an unavailable state without crashing Totem.
+### Deterministic distribution evidence
+
+After `npm run build`, run `npm run distribution:integrity`. The command fails closed unless `dist/` is a real in-repository directory containing exactly `index.js` and `index.d.ts` as regular files, and unless package identity/exports still point at those artifacts. It emits a path-independent `totem.agent-provider-distribution/v1` JSON inventory containing each file's byte length and SHA-256 plus an aggregate SHA-256 over the canonical inventory. No timestamps or checkout paths are included, so repeated builds of the same source can be compared byte-for-byte by comparing the emitted inventory.
+
+Final Totem release evidence should pin both the exact provider source revision and the emitted aggregate digest. Symlinks, missing outputs, extra outputs, changed package identity, or exports/types drift are rejected rather than silently entering the distribution surface.
+
+Real CLI smoke validation is intentionally separate from deterministic CI because it depends on local installation/authentication.
 
 ## Source of truth
 
@@ -73,7 +63,7 @@ Real CLI smoke validation is intentionally separate from deterministic CI becaus
 - architecture/semantics: `KingHacker9000/totem/docs/AGENTS.md`
 - concrete external-runtime adapters: this repository
 
-The local `src/contracts.ts` types intentionally mirror the structural provider-neutral v0 interface until cross-repository package publication/linkage is finalized. They do not add provider-specific semantics to the core contract.
+The local `src/contracts.ts` types intentionally mirror the structural provider-neutral v0 interface until cross-repository package publication/linkage is finalized.
 
 ## Non-goals
 
