@@ -9,7 +9,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm test && npm run build"
+    "distribution:integrity": "node scripts/distribution-integrity.mjs",
+    "distribution:reproducibility": "node scripts/distribution-reproducibility.mjs",
+    "check": "npm run typecheck && npm test && npm run distribution:reproducibility"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
