@@ -46,13 +46,15 @@ npm install
 npm run check
 ```
 
-`npm run check` type-checks, runs deterministic tests, builds declarations/JavaScript, and validates the public build surface. Hosted CI runs the same check on Windows and Ubuntu with Node 22.20 and Node 24.18.
+`npm run check` type-checks, runs deterministic tests, performs two clean distribution builds, and requires their machine-readable inventories to be byte-identical. Hosted CI runs the same check on Windows and Ubuntu with Node 22.20 and Node 24.18.
 
 ### Deterministic distribution evidence
 
-After `npm run build`, run `npm run distribution:integrity`. The command fails closed unless `dist/` is a real in-repository directory containing exactly `index.js` and `index.d.ts` as regular files, and unless package identity/exports still point at those artifacts. It emits a path-independent `totem.agent-provider-distribution/v1` JSON inventory containing each file's byte length and SHA-256 plus an aggregate SHA-256 over the canonical inventory. No timestamps or checkout paths are included, so repeated builds of the same source can be compared byte-for-byte by comparing the emitted inventory.
+The distribution build excludes test files and emits the runtime module surface required by `index.js`: `claude`, `codex`, `contracts`, `index`, and `provider`, each as JavaScript plus declarations. `npm run distribution:integrity` fails closed unless `dist/` is a real in-repository directory containing exactly that ten-file surface as regular files and package identity/exports still point at `dist/index.js` and `dist/index.d.ts`.
 
-Final Totem release evidence should pin both the exact provider source revision and the emitted aggregate digest. Symlinks, missing outputs, extra outputs, changed package identity, or exports/types drift are rejected rather than silently entering the distribution surface.
+The command emits a path-independent `totem.agent-provider-distribution/v1` JSON inventory containing each file's byte length and SHA-256 plus an aggregate SHA-256 over the canonical inventory. No timestamps or checkout paths are included. `npm run distribution:reproducibility` deletes `dist/`, performs two clean builds, emits each inventory through the same integrity validator, and fails unless the two JSON inventories are byte-identical.
+
+Final Totem release evidence should pin both the exact provider source revision and the emitted aggregate digest. Symlinks, missing outputs, extra outputs, changed package identity, exports/types drift, or nondeterministic repeated builds are rejected rather than silently entering the distribution surface.
 
 Real CLI smoke validation is intentionally separate from deterministic CI because it depends on local installation/authentication.
 
