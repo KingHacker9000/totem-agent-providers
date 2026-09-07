@@ -2,7 +2,11 @@ import { spawnSync } from "node:child_process";
 import { rm } from "node:fs/promises";
 import process from "node:process";
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCli = process.env.npm_execpath;
+if (!npmCli) {
+  console.error("distribution-reproducibility: npm_execpath is unavailable");
+  process.exit(1);
+}
 
 function run(command, args) {
   const result = spawnSync(command, args, {
@@ -10,6 +14,10 @@ function run(command, args) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
+  if (result.error) {
+    console.error(`distribution-reproducibility: failed to launch ${command}: ${result.error.message}`);
+    process.exit(1);
+  }
   if (result.status !== 0) {
     process.stderr.write(result.stderr || result.stdout);
     process.exit(result.status ?? 1);
@@ -19,7 +27,7 @@ function run(command, args) {
 
 async function cleanBuildInventory() {
   await rm("dist", { recursive: true, force: true });
-  run(npm, ["run", "build"]);
+  run(process.execPath, [npmCli, "run", "build"]);
   return run(process.execPath, ["scripts/distribution-integrity.mjs"]);
 }
 
